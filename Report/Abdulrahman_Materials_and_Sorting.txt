@@ -1,0 +1,14 @@
+CS212 Project 149 | Custom Printing Order Workshop
+Abdulrahman | Materials and Sorting
+
+Singly linked list for the materials catalog
+
+The workshop's materials catalog can grow as materials are added and shrink when they are removed. A singly linked list fits this catalog because it allocates one node per material and can link in a new node or unlink an existing node without shifting other records. Each node holds the material's ID, name, unit price, and stock, plus a pointer to the next node. The head pointer identifies the first node.
+
+The list checks for duplicate IDs while walking to the end to append a new material. Adding and updating both require a finite, nonnegative price and nonnegative stock. Searching by ID follows the links from the head, and updating uses the same search to change the price and stock. Deleting reconnects the list around the selected node and frees it. When the first node is deleted, the head advances to the next node. For n materials, adding, finding, updating, and deleting each take O(n) time in the worst case because they may traverse the whole list. Displaying and counting take O(n) time, while checking whether the list is empty takes O(1) time.
+
+Sorting materials by price
+
+The catalog uses the exchange sort shown in Lab 5, slide 10, to display the cheapest materials first. For each node, the algorithm walks through the nodes that follow it. If a later node has a lower price, the algorithm swaps the two complete material records. By the end of that pass, the current node holds the cheapest remaining record. Swapping entire records keeps each material's ID, name, price, and stock together.
+
+This sort suits the workshop's small catalog because it works directly on the linked list with sequential traversal and constant extra space. For n materials, it performs n(n - 1) / 2 price comparisons even if the list is already sorted, so it takes O(n^2) time and uses O(1) auxiliary space. Materials with the same price can change relative order.

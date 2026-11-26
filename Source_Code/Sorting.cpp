@@ -1,46 +1,21 @@
 #include "Sorting.h"
 
-namespace {
+#include <cstddef>
+#include <utility>
 
-MaterialNode* mergeByPrice(MaterialNode* left, MaterialNode* right) {
-  MaterialNode* head = nullptr;
-  MaterialNode** nextLink = &head;
+using namespace std;
 
-  while (left != nullptr && right != nullptr) {
-    // Pick from the left half on ties to keep the original order.
-    if (left->data.price <= right->data.price) {
-      *nextLink = left;
-      left = left->next;
-    } else {
-      *nextLink = right;
-      right = right->next;
-    }
-    nextLink = &(*nextLink)->next;
-  }
-
-  *nextLink = left == nullptr ? right : left;
-  return head;
-}
-
-MaterialNode* mergeSortByPrice(MaterialNode* head) {
-  if (head == nullptr || head->next == nullptr) {
-    return head;
-  }
-
-  MaterialNode* middle = head;
-  MaterialNode* fast = head->next;
-  while (fast != nullptr && fast->next != nullptr) {
-    middle = middle->next;
-    fast = fast->next->next;
-  }
-
-  MaterialNode* right = middle->next;
-  middle->next = nullptr;
-  return mergeByPrice(mergeSortByPrice(head), mergeSortByPrice(right));
-}
-
-}  // namespace
-
+// Uses the Lab 5 exchange sort to order materials from cheapest to most expensive.
+// Compares the current record with each later record and swaps if the later price is lower.
+// Each pass leaves the cheapest remaining material at the current node.
+// For n materials it makes n(n - 1) / 2 comparisons, taking O(n^2) time and O(1) extra space.
 void sortMaterialsByPrice() {
-  materialHead = mergeSortByPrice(materialHead);
+  for (MaterialNode* current = materialHead; current != NULL; current = current->next) {
+    for (MaterialNode* later = current->next; later != NULL; later = later->next) {
+      if (current->data.price > later->data.price) {
+        // Keep the ID, name, price, and stock together when exchanging records.
+        swap(current->data, later->data);
+      }
+    }
+  }
 }

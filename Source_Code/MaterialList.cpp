@@ -1,67 +1,83 @@
 #include "MaterialList.h"
-
+#include <cmath>
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
-#include <utility>
+using namespace std;
 
-MaterialNode* materialHead = nullptr;
 
-namespace {
+MaterialNode* materialHead = NULL;
 
-// Return the link to the matching node, or the empty link at the end.
-MaterialNode** findMaterialLink(int id) {
-  MaterialNode** link = &materialHead;
-  while (*link != nullptr && (*link)->data.id != id) {
-    link = &(*link)->next;
-  }
-  return link;
-}
-
-bool hasValidValues(double price, int stock) {
-  return price >= 0.0 && stock >= 0;
-}
-
-}  // namespace
-
+// Appends a material with a finite, nonnegative price and nonnegative stock.
+// One walk checks for a duplicate ID and finds the last node in O(n) time.
+// If the list is empty, the new node becomes the head.
 bool addMaterial(Material m) {
-  if (!hasValidValues(m.price, m.stock)) {
+  if (!isfinite(m.price) || m.price < 0 || m.stock < 0) {
     return false;
   }
 
-  MaterialNode** link = findMaterialLink(m.id);
-  if (*link != nullptr) {
-    return false;
+  MaterialNode* last = NULL;
+  for (MaterialNode* current = materialHead; current != NULL; current = current->next) {
+    if (current->data.id == m.id) {
+      return false;
+    }
+    last = current;
   }
 
-  *link = new MaterialNode{std::move(m), nullptr};
+  MaterialNode* node = new MaterialNode{m, NULL};
+  if (last == NULL) {
+    materialHead = node;
+  } else {
+    last->next = node;
+  }
   return true;
 }
 
+// Looks for the ID in O(n) time while keeping track of the previous node.
+// Updates the head or the previous node's next pointer, then frees the node.
+// Returns false if the ID is missing.
 bool deleteMaterial(int id) {
-  MaterialNode** link = findMaterialLink(id);
-  MaterialNode* node = *link;
-  if (node == nullptr) {
+  MaterialNode* previous = NULL;
+  MaterialNode* current = materialHead;
+  while (current != NULL && current->data.id != id) {
+    previous = current;
+    current = current->next;
+  }
+
+  if (current == NULL) {
     return false;
   }
 
-  *link = node->next;
-  delete node;
+  if (previous == NULL) {
+    materialHead = current->next;
+  } else {
+    previous->next = current->next;
+  }
+  delete current;
   return true;
 }
 
+// Follows the next pointers from the head to search for the ID in O(n) time.
+// Returns the address of the stored record, or NULL if the ID is missing.
 Material* findMaterial(int id) {
-  MaterialNode* node = *findMaterialLink(id);
-  return node == nullptr ? nullptr : &node->data;
+  for (MaterialNode* current = materialHead; current != NULL; current = current->next) {
+    if (current->data.id == id) {
+      return &current->data;
+    }
+  }
+  return NULL;
 }
 
+// Checks the new price and stock, then looks up the material by ID.
+// Changes only those two fields and returns false if either check fails.
+// The lookup takes O(n) time in the worst case.
 bool updateMaterial(int id, double newPrice, int newStock) {
-  if (!hasValidValues(newPrice, newStock)) {
+  if (!isfinite(newPrice) || newPrice < 0 || newStock < 0) {
     return false;
   }
 
   Material* material = findMaterial(id);
-  if (material == nullptr) {
+  if (material == NULL) {
     return false;
   }
 
@@ -70,34 +86,50 @@ bool updateMaterial(int id, double newPrice, int newStock) {
   return true;
 }
 
+// Prints an empty-list message or shows the ID, name, price, and stock of each material.
+// Visits each node once and displays prices to two decimal places.
+// Restores cout's flags and precision after printing the table.
 void displayMaterials() {
-  std::stringstream table;
   if (isMaterialListEmpty()) {
-    table << "No materials\n";
-  } else {
-    table << std::left << std::setw(10) << "ID" << " | "
-          << std::setw(24) << "Name" << " | " << std::right
-          << std::setw(12) << "Price" << " | " << std::setw(10) << "Stock" << '\n';
-
-    table << std::fixed << std::setprecision(2);
-    for (const MaterialNode* node = materialHead; node != nullptr; node = node->next) {
-      const Material& material = node->data;
-      table << std::left << std::setw(10) << material.id << " | "
-            << std::setw(24) << material.name << " | " << std::right
-            << std::setw(12) << material.price << " | " << std::setw(10) << material.stock << '\n';
-    }
+    cout << "No materials\n";
+    return;
   }
-  std::cout << table.rdbuf();
+
+  const int idWidth = 11;
+  const int nameWidth = 22;
+  const int priceWidth = 12;
+  const int stockWidth = 10;
+  const ios::fmtflags previousFlags = cout.flags();
+  const streamsize previousPrecision = cout.precision();
+
+  cout << right << setw(idWidth) << "ID" << " | "
+       << left << setw(nameWidth) << "Name" << " | "
+       << right << setw(priceWidth) << "Price" << " | "
+       << setw(stockWidth) << "Stock" << '\n';
+
+  cout << fixed << setprecision(2);
+  for (const MaterialNode* current = materialHead; current != NULL; current = current->next) {
+    const Material& material = current->data;
+    cout << right << setw(idWidth) << material.id << " | "
+         << left << setw(nameWidth) << material.name << " | "
+         << right << setw(priceWidth) << material.price << " | "
+         << setw(stockWidth) << material.stock << '\n';
+  }
+
+  cout.flags(previousFlags);
+  cout.precision(previousPrecision);
 }
 
+// Counts one material per node by walking from the head to NULL in O(n) time.
 int countMaterials() {
   int count = 0;
-  for (const MaterialNode* node = materialHead; node != nullptr; node = node->next) {
+  for (const MaterialNode* current = materialHead; current != NULL; current = current->next) {
     ++count;
   }
   return count;
 }
 
+// Checks whether the head is NULL in O(1) time.
 bool isMaterialListEmpty() {
-  return materialHead == nullptr;
+  return materialHead == NULL;
 }
